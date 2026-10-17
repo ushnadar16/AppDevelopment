@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
-import { KeyboardAvoidingView, Platform, ScrollView, View } from 'react-native';
+import { Image, KeyboardAvoidingView, Platform, ScrollView, Text, View } from 'react-native';
 import { useApp } from '../AppContext';
-import { Btn, Card, Chip, Field, H1, Muted, Notice, s } from '../ui';
+import { Btn, C, Card, Chip, Field, H1, Muted, Notice, s } from '../ui';
 import { errorText } from '../messages';
 
 const DEMO = [['Organizer', 'organizer@nascon.test'], ['Club Manager', 'manager@nascon.test'],
@@ -27,8 +27,12 @@ export default function LoginScreen() {
   return (
     <KeyboardAvoidingView style={s.screen} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <ScrollView contentContainerStyle={s.pad} keyboardShouldPersistTaps="handled">
-        <H1>Sign in</H1>
-        <Muted style={{ marginBottom: 16 }}>League fixtures, standings, club store and roster tools.</Muted>
+        <View style={{ alignItems: 'center', marginTop: 24, marginBottom: 28 }}>
+          <Image source={require('../../assets/logo.png')} style={{ width: 92, height: 92, borderRadius: 46, borderWidth: 1.5, borderColor: C.line, marginBottom: 16 }}
+            accessibilityLabel="NaSCon League logo" />
+          <Text style={{ fontSize: 26, fontWeight: '800', color: C.text, letterSpacing: -0.4 }}>NaSCon<Text style={{ color: C.accent }}> League</Text></Text>
+          <Muted style={{ marginTop: 6 }}>Sign in to manage your league and club</Muted>
+        </View>
         <Card>
           <Field label="Email" value={email} onChangeText={setEmail} autoCapitalize="none"
             keyboardType="email-address" placeholder="you@club.com" autoComplete="email" />

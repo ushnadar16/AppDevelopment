@@ -22,7 +22,7 @@ export default function AccountScreen() {
         <P>Connection: {status === 'online' ? '● Online' : status === 'syncing' ? '⟳ Syncing' : '○ Offline'}</P>
         <P>Pending actions: {queue.length}</P>
         {queue.map((a) => (
-          <View key={a.action_id} style={{ paddingVertical: 8, borderBottomWidth: 1, borderColor: '#E5E7EB' }}>
+          <View key={a.action_id} style={{ paddingVertical: 8, borderBottomWidth: 1, borderColor: C.softLine }}>
             <Text style={{ fontSize: 16, color: C.text }}>⏳ {a.label}</Text>
             <Muted>Pending · queued {a.queued_at}</Muted>
           </View>
@@ -34,7 +34,7 @@ export default function AccountScreen() {
         <Card>
           <H2>Last sync results</H2>
           {results.map((r) => (
-            <View key={r.action_id} style={{ paddingVertical: 8, borderBottomWidth: 1, borderColor: '#E5E7EB' }}>
+            <View key={r.action_id} style={{ paddingVertical: 8, borderBottomWidth: 1, borderColor: C.softLine }}>
               <Badge status={r.status} />
               <Text style={{ fontSize: 16, color: C.text, marginTop: 4 }}>{r.label}</Text>
               <Muted>{r.message}</Muted>

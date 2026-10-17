@@ -57,7 +57,7 @@ export default function MatchScreen({ route, navigation }) {
         {isOrganizer ? <Btn title="Record score" kind="secondary" onPress={() => navigation.navigate('Scoring', { matchId })} /> : null}
       </Card>
       {product ? (
-        <Card style={{ borderColor: theme.secondary, borderWidth: 2 }}>
+        <Card style={{ borderColor: C.accent, borderWidth: 1 }}>
           <Muted>Featured from the club store</Muted>
           <H2>{product.name}</H2>
           <Text style={{ fontSize: 18, fontWeight: '700', color: C.text, marginBottom: 8 }}>{product.variants && product.variants[0] ? money(product.variants[0].price_minor) : ''}</Text>
@@ -68,7 +68,7 @@ export default function MatchScreen({ route, navigation }) {
         <H2>Timeline</H2>
         {m.events.length === 0 ? <Muted>No events yet. The timeline fills in as the match is played.</Muted> : null}
         {m.events.slice().reverse().map((e) => (
-          <View key={e.event_id} style={{ paddingVertical: 10, borderBottomWidth: 1, borderColor: '#E5E7EB' }}>
+          <View key={e.event_id} style={{ paddingVertical: 10, borderBottomWidth: 1, borderColor: C.softLine }}>
             <Text style={{ fontSize: 16, color: e.compensated ? C.muted : C.text,
               textDecorationLine: e.compensated ? 'line-through' : 'none' }}>
               {e.sequence}. {label(e)}

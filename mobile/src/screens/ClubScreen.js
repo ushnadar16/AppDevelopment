@@ -56,7 +56,7 @@ export default function ClubScreen() {
             <H2>Active roster ({club.roster.length})</H2>
             {club.roster.length === 0 ? <Empty text="No players registered yet." /> : null}
             {club.roster.map((p) => (
-              <View key={p.player_id} style={{ paddingVertical: 10, borderBottomWidth: 1, borderColor: '#E5E7EB' }}>
+              <View key={p.player_id} style={{ paddingVertical: 10, borderBottomWidth: 1, borderColor: C.softLine }}>
                 <Text style={{ fontSize: 16, fontWeight: '600', color: C.text }}>{p.name}</Text>
                 <Muted>{(p.position || '').toUpperCase()} · {(p.role || '').replace('_', ' ')}</Muted>
               </View>

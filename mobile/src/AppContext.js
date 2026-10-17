@@ -7,7 +7,8 @@ import { explain } from './messages';
 const Ctx = createContext(null);
 export const useApp = () => useContext(Ctx);
 
-const DEFAULT_THEME = { primary: '#0B5FFF', secondary: '#FFB800' };
+import { EMERALD, IVORY } from './theme';
+const DEFAULT_THEME = { primary: EMERALD, secondary: IVORY };
 
 export function AppProvider({ children }) {
   const [ready, setReady] = useState(false);
@@ -27,9 +28,9 @@ export function AppProvider({ children }) {
       let dev = await secure.get('device_id');
       if (!dev) { dev = newId('dev'); await secure.set('device_id', dev); }
       deviceId.current = dev;
-      const tok = await secure.get('token');
-      const sess = await secure.get('session');
-      if (tok && sess) { setToken(tok); setSession(JSON.parse(sess)); }
+      // Always start at the login screen: drop any session from a previous launch.
+      await secure.del('token');
+      await secure.del('session');
       setQueue(listQueue());
       setResults(listResults());
       setReady(true);
@@ -92,12 +93,27 @@ export function AppProvider({ children }) {
   }, []);
 
   const login = useCallback(async (email, password) => {
-    const res = await api.login(email, password);
-    setToken(res.token);
-    await secure.set('token', res.token);
-    const sess = { user: res.user, tenant: res.tenant || res.user.tenant || null };
-    await secure.set('session', JSON.stringify(sess));
-    setSession(sess);
+    try {
+      const res = await api.login(email, password);
+      setToken(res.token);
+      const sess = { user: res.user, tenant: res.tenant || res.user.tenant || null };
+      await secure.set('token', res.token);
+      await secure.set('session', JSON.stringify(sess));
+      // remembered (in the Android Keystore) so the same user can sign in again while offline
+      await secure.set('offline_login', JSON.stringify({ email, password, token: res.token, session: sess }));
+      setSession(sess);
+      return { offline: false };
+    } catch (e) {
+      if (e.status !== 0) throw e;
+      const saved = await secure.get('offline_login');
+      const o = saved ? JSON.parse(saved) : null;
+      if (o && o.email === email && o.password === password) {
+        setToken(o.token);
+        setSession(o.session);
+        return { offline: true };
+      }
+      throw e;
+    }
   }, []);
 
   const logout = useCallback(async () => {
@@ -115,7 +131,7 @@ export function AppProvider({ children }) {
     check();
   }, [check]);
 
-  const theme = (session && session.tenant && session.tenant.colors) || DEFAULT_THEME;
+  const theme = { ...DEFAULT_THEME, brand: (session && session.tenant && session.tenant.colors) || null };
   const status = syncing ? 'syncing' : online ? 'online' : 'offline';
 
   return (

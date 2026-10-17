@@ -62,7 +62,7 @@ export default function StoreScreen({ navigation }) {
       {products.length === 0 ? <Empty text="The store has no products yet." /> : null}
       {products.map((p) => (
         <Card key={p.product_id}>
-          <View style={{ height: 120, borderRadius: 10, backgroundColor: '#E0E7FF', alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}
+          <View style={{ height: 120, borderRadius: 10, backgroundColor: C.raised, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}
             accessible accessibilityLabel={`${p.name} product image`}>
             <Text style={{ fontSize: 48 }}>👕</Text>
           </View>

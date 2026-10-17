@@ -41,15 +41,15 @@ export default function StandingsScreen({ navigation }) {
           <H2>Table · top {table.qualification_spots} qualify</H2>
           <ScrollView horizontal>
             <View>
-              <View style={[s.row, { borderBottomWidth: 2, borderColor: C.border, paddingVertical: 8 }]}>
+              <View style={[s.row, { borderBottomWidth: 1.5, borderColor: C.line, paddingVertical: 8 }]}>
                 <Text style={[cell, { width: 28 }]}>#</Text>
                 <Text style={[cell, { width: 140, textAlign: 'left' }]}>Team</Text>
                 {COLS.map(([h]) => <Text key={h} style={cell}>{h}</Text>)}
                 <Text style={[cell, { width: 130 }]}>Status</Text>
               </View>
               {table.table.map((r) => (
-                <View key={r.team_id} style={[s.row, { paddingVertical: 10, borderBottomWidth: 1, borderColor: '#E5E7EB',
-                  backgroundColor: r.rank <= table.qualification_spots ? '#ECFDF5' : 'transparent' }]}
+                <View key={r.team_id} style={[s.row, { paddingVertical: 10, borderBottomWidth: 1, borderColor: C.softLine,
+                  backgroundColor: r.rank <= table.qualification_spots ? 'rgba(46,91,71,0.10)' : 'transparent' }]}
                   accessible accessibilityLabel={`Rank ${r.rank}, ${teamName(r.team_id)}, ${r.points} points, ${r.status.replace('_', ' ')}`}>
                   <Text style={[cell, { width: 28, fontWeight: '800' }]}>{r.rank}</Text>
                   <Text style={[cell, { width: 140, textAlign: 'left' }]} numberOfLines={1}>{teamName(r.team_id)}</Text>
