@@ -102,6 +102,8 @@ def checkout(state, body):
                 raise conflict("DUPLICATE_ORDER_ID", f"Order {oid} already exists with a different body.", order_id=oid)
             if prior["error"] is not None:
                 raise prior["error"]
+            if prior["response"] is None:
+                raise conflict("DUPLICATE_ORDER_ID", f"Order {oid} is still being processed.", order_id=oid)
             return 200, prior["response"]
         for it in req["items"]:
             if it["variant_id"] not in state.variants:

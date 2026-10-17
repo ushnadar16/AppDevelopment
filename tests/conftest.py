@@ -2,7 +2,8 @@ import os
 import sys
 
 os.environ.setdefault("DAY1_SALT", "demo-salt")
-os.environ.pop("DATABASE_URL", None)
+if not os.environ.get("NASCON_TEST_DB"):
+    os.environ.pop("DATABASE_URL", None)
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "backend"))
 
 import pytest
