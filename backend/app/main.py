@@ -491,8 +491,10 @@ async def prod_checkout(request: Request):
 
 
 @app.get("/api/v1/orders/{order_id}/receipt.pdf")
-async def receipt_pdf(order_id: str, request: Request):
-    claims = current_user(request)
+async def receipt_pdf(order_id: str, request: Request, token: str = None):
+    # header auth, or ?token= so the phone's browser can download the PDF directly
+    auth = request.headers.get("authorization") or (f"Bearer {token}" if token else None)
+    claims = rbac.verify(auth)
     o = state.orders.get(order_id)
     if o is None or o["response"] is None:
         raise ApiError(404, "ORDER_NOT_FOUND", "This order does not exist.", {"order_id": order_id})
