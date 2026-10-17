@@ -60,6 +60,9 @@ def rate_limited(ip):
 async def guard(request: Request, call_next):
     cl = request.headers.get("content-length")
     if cl and cl.isdigit() and int(cl) > MAX_BODY:
+        # Drain the upload first so clients read the 413 instead of hitting a broken pipe.
+        async for _ in request.stream():
+            pass
         return err(ApiError(413, "PAYLOAD_TOO_LARGE", "Request body exceeds 1 MB.", {"limit_bytes": MAX_BODY}))
     if request.url.path.startswith("/api/v1/"):
         ip = request.client.host if request.client else "unknown"

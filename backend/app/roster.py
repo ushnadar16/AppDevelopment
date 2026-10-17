@@ -49,6 +49,8 @@ def setup(state, body):
         raise not_found("SPORT_NOT_FOUND", f"Sport {lg['sport_id']} not found.", sport_id=lg["sport_id"])
     lid = lg["league_id"]
     old = state.roster_leagues.get(lid)
+    for rid in [r for r, v in state.transfer_requests.items() if v.get("league_id") == lid]:
+        del state.transfer_requests[rid]
     if old:
         for pid in old["players"]:
             if state.player_league.get(pid) == lid:
@@ -253,7 +255,7 @@ def transfer(state, body):
     resp = {"request_id": req["request_id"], "status": "accepted", "state": st, "blocking_match_id": blocking,
             "registration": registration, "audit_entry": entry}
     state.transfer_requests[req["request_id"]] = {"fingerprint": fp, "response": resp,
-                                                  "player_id": player["player_id"]}
+                                                  "player_id": player["player_id"], "league_id": rl["league_id"]}
     return 201, resp
 
 
