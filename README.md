@@ -1,4 +1,4 @@
-# NaSCon '26 — Multi-Sport League & Club Operations Platform
+# NaSCon '2026 — Multi-Sport League & Club Operations Platform
 
 Backend: Python 3.12 · FastAPI · PostgreSQL 16 · Redis 7 (domain-event stream). Mobile: React Native (Android), in `mobile/`.
 
