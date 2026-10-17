@@ -4,7 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getCached } from '../api';
 import { useApp } from '../AppContext';
 import { errorText } from '../messages';
-import { C, Card, Chip, Empty, H1, H2, Loading, Muted, Notice, P, s } from '../ui';
+import { C, Card, Chip, Empty, H1, H2, Loading, Muted, Notice, P, s, teamName } from '../ui';
 
 export default function ClubScreen() {
   const { session } = useApp();
@@ -15,12 +15,13 @@ export default function ClubScreen() {
   const [error, setError] = useState('');
 
   useFocusEffect(useCallback(() => {
-    getCached('/api/v1/clubs').then((r) => {
-      setClubs(r.data.clubs);
-      const id = clubId || (r.data.clubs[0] && r.data.clubs[0].club_id);
-      setClubId(id);
-      if (id) return getCached(`/api/v1/clubs/${id}`).then((c) => { setClub(c.data); setOffline(c.offline || r.offline); setError(''); });
-    }).catch((e) => setError(errorText(e)));
+    const list = (session.user.tenant_id === 'tenant-beta' ? ['club-beta-1'] : ['club-alpha-1', 'club-alpha-2'])
+      .map((id) => ({ club_id: id, name: teamName(id) }));
+    setClubs(list);
+    const id = clubId || list[0].club_id;
+    setClubId(id);
+    getCached(`/api/v1/clubs/${id}`).then((c) => { setClub(c.data); setOffline(c.offline); setError(''); })
+      .catch((e) => setError(errorText(e)));
   }, [clubId]));
 
   if (!clubs && !error) return <Loading text="Loading club…" />;
@@ -41,8 +42,14 @@ export default function ClubScreen() {
           </Card>
           <Card>
             <H2>Staff</H2>
-            {Object.entries(club.staff || {}).map(([role, name]) => (
-              <P key={role}>{role[0].toUpperCase() + role.slice(1)}: {name}</P>
+            {(Array.isArray(club.staff) ? club.staff : Object.entries(club.staff || {}).map(([role, name]) => ({ role, name })))
+              .map((st) => <P key={st.role}>{st.role[0].toUpperCase() + st.role.slice(1)}: {st.name}</P>)}
+          </Card>
+          <Card>
+            <H2>Season history</H2>
+            {(club.stats || []).length === 0 ? <Muted>No past seasons yet.</Muted> : null}
+            {(club.stats || []).map((x) => (
+              <P key={x.season}>{x.season}: P{x.played} · W{x.won} · D{x.drawn} · L{x.lost}</P>
             ))}
           </Card>
           <Card>

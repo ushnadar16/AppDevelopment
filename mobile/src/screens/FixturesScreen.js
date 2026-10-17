@@ -3,7 +3,7 @@ import { FlatList, Pressable, RefreshControl, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getCached } from '../api';
 import { errorText } from '../messages';
-import { Badge, C, Card, Empty, Loading, Muted, Notice, s } from '../ui';
+import { Badge, C, Card, Empty, Loading, Muted, Notice, s, teamName } from '../ui';
 
 const ORDER = { in_progress: 0, upcoming: 1, completed: 2 };
 
@@ -15,8 +15,8 @@ export default function FixturesScreen({ navigation }) {
 
   const load = useCallback(async () => {
     try {
-      const r = await getCached('/api/v1/matches');
-      setData(r.data.matches); setOffline(r.offline); setError('');
+      const r = await getCached('/api/v1/fixtures');
+      setData(r.data.fixtures); setOffline(r.offline); setError('');
     } catch (e) { setError(errorText(e)); }
   }, []);
 
@@ -32,14 +32,17 @@ export default function FixturesScreen({ navigation }) {
         {offline ? <Notice kind="warn" text="You're offline. Showing fixtures saved on this phone." /> : null}
       </>}
       ListEmptyComponent={<Empty text="No matches yet. Fixtures appear here once a league is scheduled." />}
-      renderItem={({ item: m }) => (
+      renderItem={({ item }) => {
+        const m = { ...item, home: item.home.team_id, away: item.away.team_id, home_score: item.home.score,
+          away_score: item.away.score, home_name: teamName(item.home.team_id), away_name: teamName(item.away.team_id) };
+        return (
         <Pressable onPress={() => navigation.navigate('Match', { matchId: m.match_id, title: `${m.home_name || m.home} vs ${m.away_name || m.away}` })}
           accessibilityRole="button"
           accessibilityLabel={`${m.home_name || m.home} ${m.home_score}, ${m.away_name || m.away} ${m.away_score}, ${m.status.replace('_', ' ')}. Open match.`}>
           <Card>
             <View style={[s.row, { justifyContent: 'space-between', marginBottom: 8 }]}>
               <Badge status={m.status} />
-              <Muted>{m.league_id || 'Friendly'}</Muted>
+              <Muted>{m.scheduled_at ? new Date(m.scheduled_at).toLocaleString() : (m.league_id || 'Friendly')}</Muted>
             </View>
             <View style={[s.row, { justifyContent: 'space-between' }]}>
               <Text style={{ fontSize: 17, fontWeight: '600', color: C.text, flex: 1 }}>{m.home_name || m.home}</Text>
@@ -48,8 +51,10 @@ export default function FixturesScreen({ navigation }) {
               </Text>
               <Text style={{ fontSize: 17, fontWeight: '600', color: C.text, flex: 1, textAlign: 'right' }}>{m.away_name || m.away}</Text>
             </View>
+            {m.venue ? <Muted style={{ marginTop: 6 }}>📍 {m.venue}</Muted> : null}
           </Card>
         </Pressable>
-      )} />
+        );
+      }} />
   );
 }

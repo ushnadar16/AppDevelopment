@@ -5,7 +5,7 @@ import { api, getCached } from '../api';
 import { useApp } from '../AppContext';
 import { errorText } from '../messages';
 import { newId } from '../storage';
-import { Badge, Btn, C, Card, Chip, Empty, H2, Loading, Muted, Notice, s } from '../ui';
+import { Badge, Btn, C, Card, Chip, Empty, H2, Loading, Muted, Notice, s, teamName } from '../ui';
 
 export default function ScoringScreen({ route }) {
   const { online, enqueue } = useApp();
@@ -18,16 +18,15 @@ export default function ScoringScreen({ route }) {
 
   const load = useCallback(async () => {
     try {
-      const r = await getCached('/api/v1/matches');
-      const ms = r.data.matches.filter((m) => m.status !== 'completed');
+      const r = await getCached('/api/v1/fixtures');
+      const ms = r.data.fixtures.filter((m) => m.status !== 'completed');
       setMatches(ms);
       const id = matchId || (ms[0] && ms[0].match_id);
       if (!id) return;
       setMatchId(id);
       const d = await getCached(`/api/v1/matches/${id}`);
       setMatch(d.data);
-      const sp = await getCached(`/api/v1/sports/${d.data.sport_id}`);
-      setSport(sp.data);
+      setSport(d.data.sport);
       setTeam((t) => t || d.data.home.team_id);
     } catch (e) { setMsg(['bad', errorText(e)]); }
   }, [matchId]);
@@ -57,7 +56,7 @@ export default function ScoringScreen({ route }) {
       <Card>
         <H2>Match</H2>
         <View style={s.wrap}>
-          {matches.map((m) => <Chip key={m.match_id} label={`${m.home_name} vs ${m.away_name}`} selected={matchId === m.match_id}
+          {matches.map((m) => <Chip key={m.match_id} label={`${teamName(m.home.team_id)} vs ${teamName(m.away.team_id)}`} selected={matchId === m.match_id}
             onPress={() => { setMatchId(m.match_id); setTeam(null); setMatch(null); }} />)}
         </View>
       </Card>
@@ -77,12 +76,12 @@ export default function ScoringScreen({ route }) {
             <Card>
               <H2>Add score</H2>
               <View style={s.wrap}>
-                {[match.home.team_id, match.away.team_id].map((t) => <Chip key={t} label={t} selected={team === t} onPress={() => setTeam(t)} />)}
+                {[match.home.team_id, match.away.team_id].map((t) => <Chip key={t} label={teamName(t)} selected={team === t} onPress={() => setTeam(t)} />)}
               </View>
               <View style={s.wrap}>
                 {Object.keys(sport.scoring_events).map((k) => (
                   <Btn key={k} small title={`+ ${k.replace(/_/g, ' ')}`} style={{ marginRight: 8 }}
-                    onPress={() => send('score', { team_id: team, event_type: k }, `${k.replace(/_/g, ' ')} for ${team}`)} />
+                    onPress={() => send('score', { team_id: team, event_type: k }, `${k.replace(/_/g, ' ')} for ${teamName(team)}`)} />
                 ))}
               </View>
             </Card>
@@ -92,7 +91,7 @@ export default function ScoringScreen({ route }) {
             {match.events.filter((e) => ['score', 'discipline', 'tiebreak_winner'].includes(e.type)).slice(-6).reverse().map((e) => (
               <View key={e.event_id} style={[s.row, { justifyContent: 'space-between', paddingVertical: 6 }]}>
                 <Text style={{ flex: 1, fontSize: 16, color: e.compensated ? C.muted : C.text, textDecorationLine: e.compensated ? 'line-through' : 'none' }}>
-                  {(e.payload.event_type || e.type).replace(/_/g, ' ')} — {e.payload.team_id}
+                  {(e.payload.event_type || e.type).replace(/_/g, ' ')} — {teamName(e.payload.team_id)}
                 </Text>
                 {!e.compensated ? <Btn small kind="secondary" title="Undo" onPress={() => undo(e)} /> : <Muted>Reversed</Muted>}
               </View>

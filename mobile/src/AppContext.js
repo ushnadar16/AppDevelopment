@@ -95,7 +95,7 @@ export function AppProvider({ children }) {
     const res = await api.login(email, password);
     setToken(res.token);
     await secure.set('token', res.token);
-    const sess = { user: res.user, tenant: res.tenant };
+    const sess = { user: res.user, tenant: res.tenant || res.user.tenant || null };
     await secure.set('session', JSON.stringify(sess));
     setSession(sess);
   }, []);

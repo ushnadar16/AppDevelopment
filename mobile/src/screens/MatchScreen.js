@@ -4,7 +4,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { getCached } from '../api';
 import { useApp } from '../AppContext';
 import { errorText } from '../messages';
-import { Badge, Btn, C, Card, H2, Loading, Muted, Notice, money, s } from '../ui';
+import { Badge, Btn, C, Card, H2, Loading, Muted, Notice, money, s, teamName } from '../ui';
 
 const label = (e) => {
   const p = e.payload || {};
@@ -12,7 +12,7 @@ const label = (e) => {
     case 'match_init': return 'Match created';
     case 'match_start': return 'Kick-off';
     case 'match_end': return 'Full time';
-    case 'score': return `${(p.event_type || '').replace(/_/g, ' ')} — ${p.team_id}`;
+    case 'score': return `${(p.event_type || '').replace(/_/g, ' ')} — ${teamName(p.team_id)}`;
     case 'discipline': return `Discipline ${p.points} — ${p.team_id}`;
     case 'tiebreak_winner': return `Tie-break won by ${p.team_id}`;
     case 'compensation': return `Correction: ${p.reason || 'event reversed'}`;
@@ -37,9 +37,7 @@ export default function MatchScreen({ route, navigation }) {
 
   // live score: refresh every 3 s while the screen is open
   useFocusEffect(useCallback(() => { load(); const id = setInterval(load, 3000); return () => clearInterval(id); }, [load]));
-  useEffect(() => {
-    getCached('/api/v1/products').then((r) => setProduct((r.data.products || [])[0] || null)).catch(() => {});
-  }, []);
+  useEffect(() => { if (m) setProduct(m.pinned_product || null); }, [m]);
 
   if (!m) return error ? <Notice kind="bad" text={error} /> : <Loading text="Loading match…" />;
   const isOrganizer = ['league_organizer', 'super_admin'].includes(session.user.role);
@@ -62,7 +60,7 @@ export default function MatchScreen({ route, navigation }) {
         <Card style={{ borderColor: theme.secondary, borderWidth: 2 }}>
           <Muted>Featured from the club store</Muted>
           <H2>{product.name}</H2>
-          <Text style={{ fontSize: 18, fontWeight: '700', color: C.text, marginBottom: 8 }}>{money(product.variants[0].price_minor)}</Text>
+          <Text style={{ fontSize: 18, fontWeight: '700', color: C.text, marginBottom: 8 }}>{product.variants && product.variants[0] ? money(product.variants[0].price_minor) : ''}</Text>
           <Btn title="Buy now" onPress={() => navigation.navigate('Tabs', { screen: 'Store' })} />
         </Card>
       ) : null}

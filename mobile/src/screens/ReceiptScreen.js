@@ -1,12 +1,12 @@
 import React from 'react';
 import { Linking, ScrollView, Text, View } from 'react-native';
-import { getBase, getToken } from '../api';
+import { receiptUrl } from '../api';
 import { Btn, C, Card, H1, Muted, Notice, money, s } from '../ui';
 
 export default function ReceiptScreen({ route, navigation }) {
   const { order } = route.params;
   const p = order.receipt.payload;
-  const open = () => Linking.openURL(`${getBase()}/api/v1/receipts/${order.order_id}.pdf?token=${encodeURIComponent(getToken())}`);
+  const open = () => Linking.openURL(receiptUrl(order.order_id));
   return (
     <ScrollView style={s.screen} contentContainerStyle={s.pad}>
       <Notice kind="ok" text="Payment successful. Thank you!" />

@@ -9,6 +9,7 @@ export const setBase = (u) => { BASE = (u || DEFAULT_SERVER).trim().replace(/\/+
 export const getBase = () => BASE;
 export const setToken = (t) => { TOKEN = t; };
 export const getToken = () => TOKEN;
+export const receiptUrl = (orderId) => `${BASE}/api/v1/orders/${orderId}/receipt.pdf?token=${encodeURIComponent(TOKEN || '')}`;
 
 export class ApiError extends Error {
   constructor(status, code, message, details) {
@@ -60,7 +61,7 @@ export async function getCached(path) {
 export const api = {
   health: async () => { try { await request('GET', '/health', undefined, 3000); return true; } catch (e) { return false; } },
   login: (email, password) => request('POST', '/api/v1/auth/login', { email, password }),
-  postEvent: (body) => request('POST', '/api/v1/events', body),
+  postEvent: (body) => request('POST', `/api/v1/matches/${body.match_id}/events`, body),
   transfer: (body) => request('POST', '/api/v1/roster/transfer', body),
   checkout: (body) => request('POST', '/api/v1/checkout', body, 15000),
   offlineSync: (body) => request('POST', '/api/v1/offline-sync', body, 15000),

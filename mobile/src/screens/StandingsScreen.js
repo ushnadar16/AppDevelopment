@@ -3,7 +3,7 @@ import { ScrollView, Text, View } from 'react-native';
 import { useFocusEffect } from '@react-navigation/native';
 import { getCached } from '../api';
 import { errorText } from '../messages';
-import { Badge, C, Card, Chip, Empty, H2, Loading, Muted, Notice, s } from '../ui';
+import { Badge, C, Card, Chip, Empty, H2, Loading, Muted, Notice, s, teamName } from '../ui';
 
 const COLS = [['P', 'played'], ['W', 'won'], ['D', 'drawn'], ['L', 'lost'], ['+/-', 'diff'], ['Pts', 'points']];
 
@@ -34,7 +34,7 @@ export default function StandingsScreen({ navigation }) {
       {offline ? <Notice kind="warn" text="Offline — showing standings saved on this phone." /> : null}
       {leagues && leagues.length === 0 ? <Empty text="No leagues yet." /> : null}
       <View style={s.wrap}>
-        {(leagues || []).map((l) => <Chip key={l.league_id} label={l.league_id} selected={league === l.league_id} onPress={() => setLeague(l.league_id)} />)}
+        {(leagues || []).map((l) => <Chip key={l.league_id} label={l.name || l.league_id} selected={league === l.league_id} onPress={() => setLeague(l.league_id)} />)}
       </View>
       {table ? (
         <Card>
@@ -50,9 +50,9 @@ export default function StandingsScreen({ navigation }) {
               {table.table.map((r) => (
                 <View key={r.team_id} style={[s.row, { paddingVertical: 10, borderBottomWidth: 1, borderColor: '#E5E7EB',
                   backgroundColor: r.rank <= table.qualification_spots ? '#ECFDF5' : 'transparent' }]}
-                  accessible accessibilityLabel={`Rank ${r.rank}, ${table.team_names?.[r.team_id] || r.team_id}, ${r.points} points, ${r.status.replace('_', ' ')}`}>
+                  accessible accessibilityLabel={`Rank ${r.rank}, ${teamName(r.team_id)}, ${r.points} points, ${r.status.replace('_', ' ')}`}>
                   <Text style={[cell, { width: 28, fontWeight: '800' }]}>{r.rank}</Text>
-                  <Text style={[cell, { width: 140, textAlign: 'left' }]} numberOfLines={1}>{table.team_names?.[r.team_id] || r.team_id}</Text>
+                  <Text style={[cell, { width: 140, textAlign: 'left' }]} numberOfLines={1}>{teamName(r.team_id)}</Text>
                   {COLS.map(([h, k]) => <Text key={h} style={[cell, h === 'Pts' && { fontWeight: '800' }]}>{r[k]}</Text>)}
                   <View style={{ width: 130, paddingLeft: 8 }}><Badge status={r.status} /></View>
                 </View>

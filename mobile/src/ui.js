@@ -107,6 +107,12 @@ export function SyncBar({ onPress }) {
   );
 }
 
+const TEAM_NAMES = {
+  'club-alpha-1': 'Alpha Falcons', 'club-alpha-2': 'Alpha Lions', 'demo-alpha-3': 'Alpha Rangers',
+  'demo-alpha-4': 'Alpha City', 'club-beta-1': 'Beta Stars',
+};
+export const teamName = (id) => TEAM_NAMES[id] || String(id || '').replace(/[-_]/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
 export const money = (minor) => `PKR ${(minor / 100).toFixed(2)}`;
 
 export const s = StyleSheet.create({
