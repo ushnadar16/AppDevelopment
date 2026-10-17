@@ -83,7 +83,8 @@ def _roster(state, a):
     return _result(a, "applied", resolution, None, new_version)
 
 
-def offline_sync(state, body):
+def offline_sync(state, body, authorize=None):
+    """authorize(action) raises ApiError when the caller may not perform it (production route only)."""
     device_id, actions = _validate(body)
     order = sorted(range(len(actions)), key=lambda i: (actions[i]["queued_at"], i))
     results = [None] * len(actions)
@@ -94,7 +95,9 @@ def offline_sync(state, body):
             prev = state.sync_seen[key]
             r = _result(a, "duplicate", "skipped_duplicate", None, _current_version(state, a, prev))
         else:
-            r = _score_event(state, a) if a["type"] == "score_event" else _roster(state, a)
+            r = _authorized(state, a, authorize)
+            if r is None:
+                r = _score_event(state, a) if a["type"] == "score_event" else _roster(state, a)
             state.sync_seen[key] = r["server_version"]
         r["processed_order"] = n
         results[i] = r
@@ -103,6 +106,17 @@ def offline_sync(state, body):
         summary[r["status"]] += 1
     state.emit("offline_sync.processed", {"device_id": device_id, **summary})
     return {"device_id": device_id, "results": results, "summary": summary}
+
+
+def _authorized(state, a, authorize):
+    """None when allowed, else a rejected result carrying the authorization error code."""
+    if authorize is None:
+        return None
+    try:
+        authorize(a)
+    except ApiError as e:
+        return _result(a, "rejected", "server_wins", e.code, _current_version(state, a, 0))
+    return None
 
 
 def _current_version(state, a, fallback):

@@ -46,3 +46,39 @@ def test_offline_sync(client):
     assert again["summary"] == {"applied": 0, "rejected": 0, "duplicate": 7}
     assert client.get("/audit/v1/score/m1").json()["version"] == 4
     assert client.post("/audit/v1/offline-sync", json={"device_id": "d", "actions": []}).status_code == 400
+
+
+def _auth(client, who):
+    tok = client.post("/api/v1/auth/login", json={"email": f"{who}@nascon.test", "password": "Nascon@26"}).json()["token"]
+    return {"Authorization": f"Bearer {tok}"}
+
+
+def test_production_sync_enforces_rbac(client):
+    match = next(f for f in client.get("/api/v1/fixtures", headers=_auth(client, "viewer")).json()["fixtures"]
+                 if f["status"] == "in_progress")
+    def body(device, action_id, event_id):
+        return {"device_id": device, "actions": [
+            {"action_id": action_id, "type": "score_event", "queued_at": "2026-10-17T11:00:00Z", "base_version": 0,
+             "payload": {"event_id": event_id, "match_id": match["match_id"], "type": "score",
+                         "payload": {"team_id": match["home"]["team_id"], "event_type": "goal"}}},
+            {"action_id": action_id + "-r", "type": "roster_transfer", "queued_at": "2026-10-17T11:01:00Z",
+             "base_version": 0, "payload": {"request_id": "tr-" + action_id, "league_id": "league-alpha-1",
+                                            "player_id": "demo-player-4", "type": "release", "from_squad_id": "club-alpha-1",
+                                            "to_squad_id": None, "effective_date": "2026-10-17", "reason": "x"}}]}
+    r = client.post("/api/v1/offline-sync", json=body("dev-v", "v1", "off-v1"), headers=_auth(client, "viewer")).json()
+    assert [x["error_code"] for x in r["results"]] == ["FORBIDDEN", "FORBIDDEN"]
+    assert r["summary"] == {"applied": 0, "rejected": 2, "duplicate": 0}
+    r = client.post("/api/v1/offline-sync", json=body("dev-o", "o1", "off-o1"), headers=_auth(client, "organizer")).json()
+    assert [x["status"] for x in r["results"]] == ["applied", "rejected"]
+    r = client.post("/api/v1/offline-sync", json=body("dev-m", "m1", "off-m1"), headers=_auth(client, "manager")).json()
+    assert [x["status"] for x in r["results"]] == ["rejected", "applied"]
+
+
+def test_receipt_only_for_owner(client):
+    order = {"order_id": "app-1", "items": [{"variant_id": "var-jersey-001-L", "quantity": 1}],
+             "discount_code": None, "payment": {"token": "tok_success"}, "customer_id": "someone-else"}
+    assert client.post("/api/v1/checkout", json=order, headers=_auth(client, "player")).status_code == 201
+    assert client.get("/api/v1/orders/app-1/receipt.pdf", headers=_auth(client, "player")).content.startswith(b"%PDF")
+    assert client.get("/api/v1/orders/app-1/receipt.pdf", headers=_auth(client, "viewer")).status_code == 403
+    assert client.get("/api/v1/orders/app-1/receipt.pdf", headers=_auth(client, "admin")).status_code == 200
+    assert client.get("/api/v1/orders/nope/receipt.pdf", headers=_auth(client, "admin")).status_code == 404

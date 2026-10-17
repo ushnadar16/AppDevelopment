@@ -368,16 +368,27 @@ async def match_detail(match_id: str, request: Request):
     return ok(v)
 
 
+def authorize_scoring(claims, match_id):
+    m = state.matches.get(match_id) if isinstance(match_id, str) else None
+    if m is not None and m["league_id"] in state.rbac_leagues:
+        rbac.authorize(state, claims, "league.scoring.write", {"kind": "league", "id": m["league_id"]})
+    elif claims["role"] not in ("super_admin", "league_organizer"):
+        raise rbac.forbidden()
+
+
+def authorize_roster(claims, from_squad_id):
+    if from_squad_id in state.clubs:
+        rbac.authorize(state, claims, "club.roster.write", {"kind": "club", "id": from_squad_id})
+    elif claims["role"] != "super_admin":
+        raise rbac.forbidden()
+
+
 @app.post("/api/v1/matches/{match_id}/events")
 async def match_event(match_id: str, request: Request):
     claims = current_user(request)
     body = await read_json(request)
     with state.lock:
-        m = state.matches.get(match_id)
-        if m is not None and m["league_id"] in state.rbac_leagues:
-            rbac.authorize(state, claims, "league.scoring.write", {"kind": "league", "id": m["league_id"]})
-        elif claims["role"] not in ("super_admin", "league_organizer"):
-            raise rbac.forbidden()
+        authorize_scoring(claims, match_id)
         if isinstance(body, dict):
             body["match_id"] = match_id
         status, resp = scoring.append_event(state, body)
@@ -441,11 +452,7 @@ async def prod_transfer(request: Request):
     body = await read_json(request)
     with state.lock:
         if isinstance(body, dict):
-            sq = body.get("from_squad_id")
-            if sq in state.clubs:
-                rbac.authorize(state, claims, "club.roster.write", {"kind": "club", "id": sq})
-            elif claims["role"] != "super_admin":
-                raise rbac.forbidden()
+            authorize_roster(claims, body.get("from_squad_id"))
             body.setdefault("requested_by", claims["sub"])
         status, resp = roster.transfer(state, body)
     return ok(resp, status)
@@ -478,17 +485,19 @@ async def prod_checkout(request: Request):
     claims = current_user(request)
     body = await read_json(request)
     if isinstance(body, dict):
-        body.setdefault("customer_id", claims["sub"])
+        body["customer_id"] = claims["sub"]  # orders always belong to the signed-in user
     status, resp = store.checkout(state, body)
     return ok(resp, status)
 
 
 @app.get("/api/v1/orders/{order_id}/receipt.pdf")
 async def receipt_pdf(order_id: str, request: Request):
-    current_user(request)
+    claims = current_user(request)
     o = state.orders.get(order_id)
     if o is None or o["response"] is None:
         raise ApiError(404, "ORDER_NOT_FOUND", "This order does not exist.", {"order_id": order_id})
+    if claims["role"] != "super_admin" and o.get("customer_id") != claims["sub"]:
+        raise rbac.forbidden()
     pdf = base64.b64decode(o["response"]["receipt"]["pdf_base64"])
     return Response(pdf, media_type="application/pdf",
                     headers={"Content-Disposition": f'attachment; filename="receipt-{order_id}.pdf"'})
@@ -496,10 +505,19 @@ async def receipt_pdf(order_id: str, request: Request):
 
 @app.post("/api/v1/offline-sync")
 async def prod_sync(request: Request):
-    current_user(request)
+    claims = current_user(request)
     body = await read_json(request)
+
+    def authorize(action):
+        p = action["payload"]
+        if action["type"] == "score_event":
+            authorize_scoring(claims, p.get("match_id"))
+        else:
+            authorize_roster(claims, p.get("from_squad_id"))
+            p.setdefault("requested_by", claims["sub"])
+
     with state.lock:
-        return ok(sync.offline_sync(state, body))
+        return ok(sync.offline_sync(state, body, authorize))
 
 
 # ============================================================================ realtime
